@@ -27,6 +27,13 @@ COPY lib/ ./lib/
 RUN npm install --omit=dev --no-audit --no-fund \
  && npm link
 
+# `npm link` makes the CLI binary global at /usr/local/bin/kb-bundler and
+# creates /usr/local/lib/node_modules/@mscrnt/kb-bundler as a symlink, but
+# Node's default require() resolution doesn't search the global tree.
+# Bundler configs use `require("@mscrnt/kb-bundler")` — pointing NODE_PATH
+# at the global node_modules makes that resolve from any working dir.
+ENV NODE_PATH=/usr/local/lib/node_modules
+
 # Default working directory for invocations
 RUN mkdir -p /workspace /output /datasets
 WORKDIR /workspace
