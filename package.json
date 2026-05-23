@@ -1,0 +1,42 @@
+{
+  "name": "@mscrnt/kb-bundler",
+  "version": "0.1.0",
+  "description": "Bundle a structured knowledge base into a Cloudflare Pages-friendly artifact: a small inline JS module + a set of R2 blobs. For building edge-native RAG / structured-lookup chat UIs.",
+  "license": "MIT",
+  "author": "Kenneth Blossom <noreply@mscrnt.com>",
+  "homepage": "https://github.com/mscrnt/kb-bundler",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mscrnt/kb-bundler.git"
+  },
+  "keywords": [
+    "cloudflare",
+    "cloudflare-workers",
+    "cloudflare-pages",
+    "r2",
+    "rag",
+    "knowledge-base",
+    "bundler",
+    "edge"
+  ],
+  "bin": {
+    "kb-bundler": "./bin/kb-bundler.js"
+  },
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./helpers": "./lib/helpers.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node test/run.js"
+  }
+}
