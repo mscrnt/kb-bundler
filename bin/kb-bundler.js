@@ -27,6 +27,14 @@ USAGE
       Upload R2 blobs from a bundle's manifest to a CF R2 bucket.
       Credentials via env: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID.
 
+  kb-bundler serve           Print a startup banner with mount/env state, then
+                             sleep until SIGTERM. Use as the long-lived
+                             entrypoint when running as a persistent service
+                             container (Unraid, etc.).
+
+  kb-bundler doctor          Print environment diagnostics and exit 0 if the
+                             CLI is healthy. Used as HEALTHCHECK in the image.
+
   kb-bundler --help          Show this message.
   kb-bundler --version       Print version.
 
@@ -93,6 +101,77 @@ async function main() {
       process.exit(1);
     }
     return;
+  }
+
+  if (cmd === "serve") {
+    const ts = () => new Date().toISOString();
+    const mountState = (p, mode) => {
+      try {
+        const st = fs.statSync(p);
+        return st.isDirectory() ? `${p} (mounted, ${mode})` : `${p} (exists, not a dir)`;
+      } catch {
+        return `${p} (NOT MOUNTED)`;
+      }
+    };
+    const lines = [
+      "",
+      `kb-bundler v${VERSION} \u2014 persistent worker`,
+      `  node:        ${process.version}`,
+      `  pid:         ${process.pid}`,
+      `  workspace:   ${mountState("/workspace", "rw")}`,
+      `  output:      ${mountState("/output", "rw")}`,
+      `  datasets:    ${mountState("/datasets", "ro")}`,
+      `  CF token:    ${process.env.CLOUDFLARE_API_TOKEN ? "set" : "unset"}`,
+      `  CF account:  ${process.env.CLOUDFLARE_ACCOUNT_ID ? "set" : "unset"}`,
+      "",
+      `[${ts()}] READY \u2014 run jobs with:`,
+      `  docker exec <container> kb-bundler bundle /workspace/<site>/<config>.js`,
+      `  docker exec <container> kb-bundler upload-r2 /output/<site>/kb_bundler_manifest.json --bucket <bucket>`,
+      "",
+    ];
+    for (const l of lines) console.log(l);
+    const beat = setInterval(() => {}, 1 << 30);
+    const shutdown = (sig) => {
+      console.log(`[${ts()}] received ${sig}, exiting cleanly.`);
+      clearInterval(beat);
+      process.exit(0);
+    };
+    process.on("SIGTERM", () => shutdown("SIGTERM"));
+    process.on("SIGINT", () => shutdown("SIGINT"));
+    return;
+  }
+
+  if (cmd === "doctor") {
+    const checks = [
+      ["node", () => process.version],
+      ["kb-bundler", () => VERSION],
+      ["workspace writable", () => {
+        const probe = "/workspace/.kb-bundler-doctor";
+        fs.writeFileSync(probe, "ok");
+        fs.unlinkSync(probe);
+        return "ok";
+      }],
+      ["output writable", () => {
+        const probe = "/output/.kb-bundler-doctor";
+        fs.writeFileSync(probe, "ok");
+        fs.unlinkSync(probe);
+        return "ok";
+      }],
+      ["datasets readable", () => {
+        const entries = fs.readdirSync("/datasets");
+        return `${entries.length} entries`;
+      }],
+    ];
+    let failed = 0;
+    for (const [name, fn] of checks) {
+      try {
+        console.log(`OK  ${name}: ${fn()}`);
+      } catch (e) {
+        console.log(`ERR ${name}: ${e.message}`);
+        failed += 1;
+      }
+    }
+    process.exit(failed > 0 ? 1 : 0);
   }
 
   if (cmd === "upload-r2") {

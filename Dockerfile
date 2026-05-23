@@ -31,5 +31,13 @@ RUN npm install --omit=dev --no-audit --no-fund \
 RUN mkdir -p /workspace /output /datasets
 WORKDIR /workspace
 
+# Healthcheck verifies the CLI itself can spawn + that mounts are usable.
+# (`doctor` exits non-zero if /workspace, /output, or /datasets aren't usable.)
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
+  CMD kb-bundler doctor || exit 1
+
 ENTRYPOINT ["kb-bundler"]
-CMD ["--help"]
+# Default CMD runs the long-lived service: prints a banner with mount + env
+# state, then sleeps until SIGTERM. Override with --help, bundle, etc. for
+# one-shot use:  docker run --rm mscrnt/kb-bundler --help
+CMD ["serve"]
