@@ -1,6 +1,6 @@
 {
   "name": "@mscrnt/kb-bundler",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Bundle a structured knowledge base into a Cloudflare Pages-friendly artifact: a small inline JS module + a set of R2 blobs. For building edge-native RAG / structured-lookup chat UIs.",
   "license": "MIT",
   "author": "Kenneth Blossom <noreply@mscrnt.com>",
